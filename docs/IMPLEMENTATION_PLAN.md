@@ -199,6 +199,25 @@ F0 (entorno) → F1 (andamiaje) → F2 (DB) → F3 (saldo) → F4 (movimientos)
 ```
 F3–F4 pueden alternarse; F5 exige ambas; F6 exige F5; F7 exige F5+F6. Total estimado: F0 20–30 min + F1–F8 ~3 h.
 
+### B.0 Modo de ejecución por fase — OpenSpec vs IA directa (F0 ✅ completa)
+
+> Regla: **OpenSpec** cuando hay contrato/lógica que si se equivoca rompe otras fases (DB, cálculos, cierre, exports). **IA directa** cuando la tarea es mecánica y el plan ya da archivos + verificación exacta.
+> OpenSpec no está inicializado en este repo (`openspec init` pendiente). Flujo por cambio: `openspec change new <nombre>` → `proposal.md` + `tasks.md` (+ `specs/` si hay contrato) → implementar → `openspec validate` → `openspec archive`.
+
+| Fase | Modo recomendado | Por qué | Comando / prompt sugerido |
+|---|---|---|---|
+| F1 — Andamiaje Astro SSR | **IA directa** | Mecánico: scaffold + 4 placeholders + CSS base. Sin lógica de negocio. | Pega §F1 a la IA y pide crear archivos + `npm run build` en verde |
+| F2 — DB + esquema | **OpenSpec** | Contrato fundacional: 3 tablas + tipos + migraciones. Un error rompe F3–F7. | `openspec change new db-esquema` → spec `cuaderno-db` (tablas A.4, índices, .gitignore db) |
+| F3 — Saldo inicial | **IA directa** | 1 formulario + validación ≥0 + redirect. Spec en A.5 suficiente. | Pega §F3 + SQL `saldos_iniciales` a la IA |
+| F4 — Movimientos | **IA directa** | 1 página + 2 componentes, validaciones cerradas en A.5. Escalar a OpenSpec solo si la IA rompe validaciones. | Pega §F4 + enums DIAS/categorías a la IA |
+| F5 — Cálculos + Tablero | **OpenSpec ★ obligatorio** | Núcleo: `calculos.ts` única fuente de verdad + casos borde (sin inicial/sin movs/sin cierres). Lo más complicado. | `openspec change new calculos-tablero` → spec `calculos` (fórmulas A.4 + redondeo + NULL→0) |
+| F6 — Cierre diario | **OpenSpec** | Arqueo crítico: upsert por fecha, diferencia viva, observación obligatoria si ≠0, depende de F5. | `openspec change new cierre-diario` → spec `cierre` (upsert + diferencia + colores) |
+| F7 — Exports CSV + PDF | **OpenSpec** | Formato exacto: BOM, `;`, 4 secciones, escape, print ≤2 págs. Fácil de romper en Excel. | `openspec change new exports` → spec `export-csv-pdf` (BOM + secciones A.6 + firmas) |
+| F8 — Pulido + respaldo | **IA directa** | Mecánico: seed-demo, README, .gitignore, respaldo `.db`. | Pega §F8 a la IA |
+| F8b — Auditoría + tests | **IA directa** | Checklist + `tests/calculos.test.ts` sobre lógica pura ya definida en F5. | Pega §F8b + `calculos.ts` a la IA, exige `npm test` verde |
+
+Orden sugerido: F1 directa → F2 OpenSpec → F3/F4 directas en paralelo → F5 OpenSpec → F6 OpenSpec → F7 OpenSpec → F8/F8b directas.
+
 ### Fase 0 — Prerrequisitos (QUE INSTALAR ANTES; 20–30 min, una sola vez)
 
 **Objetivo:** laptop lista para que el scaffold corra sin trabas.
