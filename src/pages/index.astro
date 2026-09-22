@@ -1,10 +1,23 @@
 ---
 import Base from '../layouts/Base.astro';
+import ResumenDia from '../components/ResumenDia.astro';
+import TablaMovimientos from '../components/TablaMovimientos.astro';
 import { getUltimoSaldo } from '../db/saldos';
+import { getTodosMovimientos } from '../db/movimientos';
+import { getTodosCierres } from '../db/cierres';
+import { calcularTablero } from '../lib/calculos';
 import { formatPEN, formatFecha } from '../lib/format';
 
 const okSaldo = Astro.url.searchParams.get('ok') === 'saldo';
 const saldo = await getUltimoSaldo();
+const movs = await getTodosMovimientos();
+const cierres = await getTodosCierres();
+
+const tablero = calcularTablero(
+  saldo ? { efectivo: saldo.efectivoTotal, cuenta: saldo.cuenta } : null,
+  movs.map((m) => ({ fecha: m.fecha, tipo: m.tipo, medio: m.medio, monto: m.monto })),
+  cierres.map((c) => ({ fecha: c.fecha, efectivoContado: c.efectivoContado, cuentaContado: c.cuentaContado })),
+);
 ---
 <Base titulo="Tablero de rendición" ruta="/">
   <h1>Tablero de rendición</h1>
@@ -18,7 +31,7 @@ const saldo = await getUltimoSaldo();
         {formatPEN(saldo.efectivoMonedas)}) · Cuenta {formatPEN(saldo.cuenta)}
       </p>
       {saldo.notas && <p class="muted">{saldo.notas}</p>}
-      <p><a class="btn btn-borde" href="/saldo-inicial">Editar saldo inicial</a></p>
+      <p class="no-print"><a class="btn btn-borde" href="/saldo-inicial">Editar saldo inicial</a></p>
     </section>
   ) : (
     <section class="card" aria-label="Sin saldo inicial">
@@ -27,8 +40,19 @@ const saldo = await getUltimoSaldo();
       <p class="muted">Aún no registras la entrega del lunes. <a href="/saldo-inicial">Registrar saldo inicial</a></p>
     </section>
   )}
-  <p class="muted">F1 placeholder — el tablero real se construye en F5 (cálculos + resumen).</p>
-  <section class="card" id="rendicion">
-    <p>Saldo inicial + 3 tarjetas día + tabla + diferencias + saldo final.</p>
-  </section>
+  <div id="rendicion">
+    {tablero.dias.map((d) => (
+      <ResumenDia resumen={d} />
+    ))}
+    <section class="card" aria-label="Saldo final">
+      <p class="stat-label">Total final — jue {formatFecha('2026-09-24')}</p>
+      <p class="stat-valor">{formatPEN(tablero.totalFinal)}</p>
+    </section>
+  </div>
+  <TablaMovimientos movimientos={movs} bloqueado />
+  <p class="no-print">
+    <button type="button" class="btn btn-primario" onclick="window.print()">Imprimir / guardar PDF</button>{' '}
+    <a class="btn btn-fantasma" href="/api/export.csv">Descargar CSV</a>
+  </p>
+  <p class="muted">El CSV estará disponible en la fase 7.</p>
 </Base>

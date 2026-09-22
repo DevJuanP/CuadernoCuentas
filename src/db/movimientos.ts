@@ -11,6 +11,13 @@ export async function getMovimientosPorFecha(fecha: string) {
     .orderBy(asc(movimientos.id));
 }
 
+export async function getTodosMovimientos() {
+  return db
+    .select()
+    .from(movimientos)
+    .orderBy(asc(movimientos.fecha), asc(movimientos.id));
+}
+
 export async function getMovimientoPorId(id: number) {
   const rows = await db
     .select()

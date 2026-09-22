@@ -1,0 +1,34 @@
+---
+import type { ResumenDia } from '../lib/calculos';
+import { formatFecha, formatPEN } from '../lib/format';
+
+interface Props {
+  resumen: ResumenDia;
+}
+
+const { resumen } = Astro.props;
+const total = resumen.calculado.efectivo + resumen.calculado.cuenta;
+const difEf = resumen.diferencia?.efectivo ?? null;
+const difCta = resumen.diferencia?.cuenta ?? null;
+const descuadre = (difEf ?? 0) !== 0 || (difCta ?? 0) !== 0;
+---
+<section class="card" aria-label={`Resumen ${resumen.fecha}`}>
+  <p class="stat-label">{formatFecha(resumen.fecha)}</p>
+  <p class="stat-valor">{formatPEN(total)}</p>
+  <p class="muted">
+    Neto ef {formatPEN(resumen.neto.efectivo)} · cta {formatPEN(resumen.neto.cuenta)}
+  </p>
+  <p class="muted">
+    Calculado ef {formatPEN(resumen.calculado.efectivo)} · cta {formatPEN(resumen.calculado.cuenta)}
+  </p>
+  {resumen.diferencia === null ? (
+    <p><span class="badge badge-borde">pendiente</span></p>
+  ) : descuadre ? (
+    <p>
+      <span class="badge badge-suave">arqueo</span>{' '}
+      <span class="destructivo">Dif ef {formatPEN(difEf ?? 0)} · cta {formatPEN(difCta ?? 0)}</span>
+    </p>
+  ) : (
+    <p><span class="badge badge-suave">cuadrado</span></p>
+  )}
+</section>
