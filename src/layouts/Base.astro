@@ -1,0 +1,31 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  titulo?: string;
+  ruta?: string;
+}
+
+const { titulo = 'Cuaderno de Cuentas', ruta = '/' } = Astro.props;
+const esActiva = (r: string) => (ruta === r ? 'activo' : '');
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{titulo} — Cuaderno de Cuentas</title>
+  </head>
+  <body>
+    <nav class="nav">
+      <strong>Cuaderno</strong>
+      <a href="/" class={esActiva('/')}>Tablero</a>
+      <a href="/saldo-inicial" class={esActiva('/saldo-inicial')}>Saldo inicial</a>
+      <a href="/registrar" class={esActiva('/registrar')}>Registrar</a>
+      <a href="/cierre" class={esActiva('/cierre')}>Cierre</a>
+    </nav>
+    <main>
+      <slot />
+    </main>
+  </body>
+</html>
