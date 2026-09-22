@@ -1,10 +1,49 @@
 ---
 import Base from '../layouts/Base.astro';
+import FormSaldoInicial from '../components/FormSaldoInicial.astro';
+import { getUltimoSaldo, guardarSaldo } from '../db/saldos';
+import { validarSaldo } from '../lib/saldo';
+import { formatPEN } from '../lib/format';
+
+let error = '';
+let billetes: number | string = '';
+let monedas: number | string = '';
+let cuenta: number | string = '';
+let notas = '';
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  const valido = validarSaldo(fd);
+
+  billetes = fd.get('billetes')?.toString() ?? '';
+  monedas = fd.get('monedas')?.toString() ?? '';
+  cuenta = fd.get('cuenta')?.toString() ?? '';
+  notas = (fd.get('notas')?.toString() ?? '').trim().slice(0, 500);
+
+  if (!valido) {
+    error = 'Revisa los montos: deben ser números entre 0 y 1 000 000.';
+  } else {
+    await guardarSaldo(valido);
+    return Astro.redirect('/?ok=saldo', 303);
+  }
+} else {
+  const ultimo = await getUltimoSaldo();
+  if (ultimo) {
+    billetes = ultimo.efectivoBilletes;
+    monedas = ultimo.efectivoMonedas;
+    cuenta = ultimo.cuenta;
+    notas = ultimo.notas ?? '';
+  }
+}
 ---
 <Base titulo="Saldo inicial" ruta="/saldo-inicial">
   <h1>Saldo inicial — lunes 21/09</h1>
-  <p class="muted">F1 placeholder — formulario real en F3 (billetes, monedas, cuenta, notas).</p>
-  <section class="card">
-    <p>Billetes + monedas + cuenta.</p>
-  </section>
+  <FormSaldoInicial
+    billetes={billetes}
+    monedas={monedas}
+    cuenta={cuenta}
+    notas={notas}
+    error={error}
+  />
+  <p class="muted">El efectivo total es billetes + monedas (calculado en servidor). Ejemplo: 500 + 120.50 = {formatPEN(620.5)}.</p>
 </Base>

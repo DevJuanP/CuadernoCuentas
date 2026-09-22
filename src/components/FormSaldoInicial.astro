@@ -1,0 +1,88 @@
+---
+interface Props {
+  billetes?: number;
+  monedas?: number;
+  cuenta?: number;
+  notas?: string;
+  error?: string;
+}
+
+const { billetes = '', monedas = '', cuenta = '', notas = '', error = '' } = Astro.props as {
+  billetes?: number | string;
+  monedas?: number | string;
+  cuenta?: number | string;
+  notas?: string;
+  error?: string;
+};
+---
+<form method="post" class="card no-print" id="form-saldo">
+  <h2>Saldo inicial — lunes 21/09</h2>
+  {error !== '' && <p class="destructivo" role="alert">{error}</p>}
+  <div class="field">
+    <span>Billetes (S/)</span>
+    <input
+      type="number"
+      name="billetes"
+      id="in-billetes"
+      min="0"
+      step="0.01"
+      required
+      value={billetes}
+      placeholder="0.00"
+    />
+  </div>
+  <div class="field">
+    <span>Monedas (S/)</span>
+    <input
+      type="number"
+      name="monedas"
+      id="in-monedas"
+      min="0"
+      step="0.01"
+      required
+      value={monedas}
+      placeholder="0.00"
+    />
+  </div>
+  <div class="field">
+    <span>Efectivo total (auto)</span>
+    <p class="stat-valor" id="total-vivo">S/ 0.00</p>
+  </div>
+  <div class="field">
+    <span>Cuenta (S/)</span>
+    <input
+      type="number"
+      name="cuenta"
+      min="0"
+      step="0.01"
+      required
+      value={cuenta}
+      placeholder="0.00"
+    />
+  </div>
+  <div class="field">
+    <span>Notas (opcional)</span>
+    <textarea name="notas" rows="2" maxlength="500" placeholder="Detalle de la entrega">{notas}</textarea>
+  </div>
+  <button type="submit" class="btn btn-primario">Guardar saldo inicial</button>
+</form>
+
+<script>
+  const billetes = document.getElementById('in-billetes') as HTMLInputElement | null;
+  const monedas = document.getElementById('in-monedas') as HTMLInputElement | null;
+  const total = document.getElementById('total-vivo');
+  const fmt = new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency: 'PEN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  function actualiza() {
+    const b = Number(billetes?.value ?? 0);
+    const m = Number(monedas?.value ?? 0);
+    if (total) total.textContent = fmt.format((Number.isFinite(b) ? b : 0) + (Number.isFinite(m) ? m : 0));
+  }
+  billetes?.addEventListener('input', actualiza);
+  monedas?.addEventListener('input', actualiza);
+  actualiza();
+</script>

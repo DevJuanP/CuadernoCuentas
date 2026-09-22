@@ -1,8 +1,32 @@
 ---
 import Base from '../layouts/Base.astro';
+import { getUltimoSaldo } from '../db/saldos';
+import { formatPEN, formatFecha } from '../lib/format';
+
+const okSaldo = Astro.url.searchParams.get('ok') === 'saldo';
+const saldo = await getUltimoSaldo();
 ---
 <Base titulo="Tablero de rendición" ruta="/">
   <h1>Tablero de rendición</h1>
+  {okSaldo && <p><span class="badge badge-suave">Saldo guardado</span></p>}
+  {saldo ? (
+    <section class="card" aria-label="Saldo inicial">
+      <p class="stat-label">Saldo inicial — lunes {formatFecha(saldo.fechaEntrega ?? '2026-09-21')}</p>
+      <p class="stat-valor">{formatPEN((saldo.efectivoTotal ?? 0) + saldo.cuenta)}</p>
+      <p class="muted">
+        Efectivo {formatPEN(saldo.efectivoTotal ?? 0)} (billetes {formatPEN(saldo.efectivoBilletes)} + monedas{' '}
+        {formatPEN(saldo.efectivoMonedas)}) · Cuenta {formatPEN(saldo.cuenta)}
+      </p>
+      {saldo.notas && <p class="muted">{saldo.notas}</p>}
+      <p><a class="btn btn-borde" href="/saldo-inicial">Editar saldo inicial</a></p>
+    </section>
+  ) : (
+    <section class="card" aria-label="Sin saldo inicial">
+      <p class="stat-label">Saldo inicial</p>
+      <p><span class="badge badge-borde">pendiente</span></p>
+      <p class="muted">Aún no registras la entrega del lunes. <a href="/saldo-inicial">Registrar saldo inicial</a></p>
+    </section>
+  )}
   <p class="muted">F1 placeholder — el tablero real se construye en F5 (cálculos + resumen).</p>
   <section class="card" id="rendicion">
     <p>Saldo inicial + 3 tarjetas día + tabla + diferencias + saldo final.</p>
