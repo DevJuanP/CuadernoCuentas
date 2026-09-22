@@ -263,6 +263,7 @@ npm run dev
 ```
 
 Crea: `package.json`, `astro.config.mjs`, `tsconfig.json`, layouts/pages/lib/styles. Verificación: 4 rutas sin 500 + `npm run build` OK. Si falla por espacio en ruta, scaffold en `C:\Temp\` y copiar.
+Diseño (hecho): `global.css` implementa todos los tokens de `docs/design.md` (colores, tipografía Geist+Inter, espaciados, radios 18/24, sombra sutil, superficies) y clases de componentes (botones pill, inputs, badges, stat, tablas, print). `Base.astro` usa nav sidebar `#fafafa` + activo `#0a0a0a/#fafafa`. Estado: ✅ completada y alineada a `design.md`.
 
 ### Fase 2 — DB + esquema (20 min)
 
@@ -277,27 +278,27 @@ Verificación: existe `.db` con 3 tablas (DB Browser o `drizzle-kit studio`).
 
 ### Fase 3 — Saldo inicial lunes (20 min)
 
-GET muestra último o vacío (billetes, monedas, cuenta, notas; total vivo JS); POST valida ≥0, inserta/actualiza, redirect `/?ok=saldo`. Componente `FormSaldoInicial.astro`. Verificación: ej. 500 + 120.50 + 800 → `/` muestra efectivo 620.50 y persiste al recargar.
+GET muestra último o vacío (billetes, monedas, cuenta, notas; total vivo JS); POST valida ≥0, inserta/actualiza, redirect `/?ok=saldo`. Componente `FormSaldoInicial.astro`. Diseño (`design.md`): formulario con `.field` + `input` (fondo `#f5f5f5`, foco anillo hairline, radio 18px), submit `.btn-primario`, card 24px, total vivo en `.stat-valor`. Verificación: ej. 500 + 120.50 + 800 → `/` muestra efectivo 620.50 y persiste al recargar.
 
 ### Fase 4 — Movimientos mar/mié/jue (30 min)
 
-`registrar.astro` + `FormMovimiento` + `TablaMovimientos`. POST valida (fecha ∈ DIAS, enums, concepto, monto >0 ≤1M), bloquea día cerrado, redirect con `?fecha=`. Eliminar POST con confirm. Verificación: mar22 ingreso ef 350 “Almuerzos” + gasto ef 120 “Pollo” + ingreso cuenta 200 → neto ef +230 / cuenta +200.
+`registrar.astro` + `FormMovimiento` + `TablaMovimientos`. POST valida (fecha ∈ DIAS, enums, concepto, monto >0 ≤1M), bloquea día cerrado, redirect con `?fecha=`. Eliminar POST con confirm. Diseño (`design.md`): inputs con `.field`, tabla con estilos `table/th/td` + `.num` en montos, categoría/medio con `.badge-suave`, botón eliminar con `.destructivo` (rojo `#e7000b` solo ahí, sin más colores). Verificación: mar22 ingreso ef 350 “Almuerzos” + gasto ef 120 “Pollo” + ingreso cuenta 200 → neto ef +230 / cuenta +200.
 
 ### Fase 5 — Cálculos + Tablero (30 min)
 
-`calculos.ts` (fórmulas A.4); `index.astro` server-side con inicial + 3 `ResumenDia` + tabla + diferencias. Bordes: sin inicial (banner), sin movs (ceros), sin cierres (“pendiente”). Verificación: cuadra a mano; sin datos no rompe.
+`calculos.ts` (fórmulas A.4); `index.astro` server-side con inicial + 3 `ResumenDia` + tabla + diferencias. Bordes: sin inicial (banner), sin movs (ceros), sin cierres (“pendiente”). Diseño (`design.md`, ejemplo 1 de la guía): cada `ResumenDia` es stat card (fondo `#ffffff`, radio 24px, borde hairline, sombra sutil, padding 20px; etiqueta `.stat-label` 12px uppercase `#737373`, valor `.stat-valor` 36px/600 `#0a0a0a`); estados del día con `.badge` (nunca colores fuera de paleta). Verificación: cuadra a mano; sin datos no rompe.
 
 ### Fase 6 — Cierre diario (25 min)
 
-`cierre.astro` + `FormCierre`: selector fecha, calculado lectura, contado, diferencia viva (verde/rojo), POST upsert, observación obligatoria si ≠0. Verificación: contado=calculado → 0 verde; +10 → rojo + exige observación.
+`cierre.astro` + `FormCierre`: selector fecha, calculado lectura, contado, diferencia viva, POST upsert, observación obligatoria si ≠0. Diseño (`design.md`: la paleta no tiene verde): diferencia 0 en tinta `#0a0a0a` con `.badge-suave` (“cuadrado”); diferencia ≠0 en rojo `#e7000b` con `.destructivo` + `.badge` + exige observación. Verificación: contado=calculado → 0 en tinta; +10 → rojo + exige observación.
 
 ### Fase 7 — Exports CSV + PDF (25 min)
 
-`api/export.csv.ts` (BOM, `;`, 4 secciones, attachment); botón print + CSS + firmas; enlace CSV en `/`. Verificación: Excel legible; preview ≤2 páginas.
+`api/export.csv.ts` (BOM, `;`, 4 secciones, attachment); botón print + CSS + firmas; enlace CSV en `/`. Diseño (`design.md`): impreso B/N 11pt con `#rendicion`, nav/forms/botones ocultos vía `.no-print` (ya en `global.css`); botón imprimir `.btn-primario`, enlace CSV `.btn-fantasma` o `.btn-borde`; firmas “Recibido por ___ / Entregado por ___”. Verificación: Excel legible; preview ≤2 páginas.
 
 ### Fase 8 — Pulido + respaldo + calidad (15 + 15 min)
 
-`seed-demo.mjs` (+`--clear-demo`, solo pruebas), `.gitignore`, `README.md` (correr, respaldar, qué no hacer). Checklist A.8 en vivo.
+`seed-demo.mjs` (+`--clear-demo`, solo pruebas), `.gitignore`, `README.md` (correr, respaldar, qué no hacer + referencia visual a `docs/design.md`). Checklist A.8 en vivo.
 
 ```powershell
 npm run build; npm run preview
@@ -358,7 +359,7 @@ Copy-Item .\cuaderno.db .\respaldo\cuaderno-2026-09-21.db
 - [ ] `dev` abre 4 rutas.
 - [ ] Saldo inicial visible en `/`.
 - [ ] Movimientos mar22 → neto ef +230 / cuenta +200.
-- [ ] Cierre 0 verde / ≠0 rojo + observación.
+- [ ] Cierre 0 en tinta / ≠0 rojo + observación (sin verde: fuera de paleta `design.md`).
 - [ ] CSV abre en Excel con 4 secciones.
 - [ ] Print limpio ≤2 páginas con firmas.
 - [ ] Día cerrado bloquea movimientos.
