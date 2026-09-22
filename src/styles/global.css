@@ -294,6 +294,15 @@ textarea:focus {
   color: var(--color-ember);
 }
 
+/* Botón texto: reseteo para acciones inline (borrar en tablas) */
+.btn-texto {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
 .muted {
   color: var(--color-mid-gray);
 }

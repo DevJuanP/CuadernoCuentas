@@ -1,10 +1,79 @@
 ---
 import Base from '../layouts/Base.astro';
+import FormMovimiento from '../components/FormMovimiento.astro';
+import TablaMovimientos from '../components/TablaMovimientos.astro';
+import { DIAS, type DiaOperativo } from '../lib/const';
+import { formatFecha } from '../lib/format';
+import { validarMovimiento } from '../lib/movimiento';
+import {
+  crearMovimiento,
+  diaCerrado,
+  eliminarMovimiento,
+  getMovimientoPorId,
+  getMovimientosPorFecha,
+} from '../db/movimientos';
+
+function diaActivo(param: string | null): DiaOperativo {
+  return (DIAS as readonly string[]).includes(param ?? '') ? (param as DiaOperativo) : DIAS[0];
+}
+
+let fecha = diaActivo(Astro.url.searchParams.get('fecha'));
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  const action = fd.get('action')?.toString() ?? 'crear';
+
+  if (action === 'eliminar') {
+    const id = Number(fd.get('id'));
+    const mov = Number.isInteger(id) ? await getMovimientoPorId(id) : null;
+    if (!mov) {
+      error = 'Ese movimiento ya no existe.';
+    } else {
+      fecha = diaActivo(mov.fecha);
+      if (await diaCerrado(fecha)) {
+        error = 'Día cerrado: no se puede borrar.';
+      } else if (!(await eliminarMovimiento(id))) {
+        error = 'No se pudo borrar el movimiento.';
+      } else {
+        return Astro.redirect(`/registrar?fecha=${fecha}`, 303);
+      }
+    }
+  } else {
+    const valido = validarMovimiento(fd);
+    if (!valido) {
+      error = 'Revisa los datos: fecha válida, concepto 1–120 y monto entre 0.01 y 1 000 000.';
+    } else if (await diaCerrado(valido.fecha)) {
+      fecha = valido.fecha;
+      error = 'Día cerrado: no se puede registrar.';
+    } else {
+      await crearMovimiento(valido);
+      return Astro.redirect(`/registrar?fecha=${valido.fecha}`, 303);
+    }
+    if (valido) fecha = valido.fecha;
+  }
+}
+
+const cerrado = await diaCerrado(fecha);
+const lista = await getMovimientosPorFecha(fecha);
 ---
 <Base titulo="Registrar movimiento" ruta="/registrar">
   <h1>Registrar — mar 22 / mié 23 / jue 24</h1>
-  <p class="muted">F1 placeholder — formulario real en F4 (fecha, tipo, medio, categoría, concepto, monto).</p>
-  <section class="card">
-    <p>Formulario + lista del día + borrar.</p>
-  </section>
+  <nav class="no-print" aria-label="Día operativo">
+    {DIAS.map((d) => (
+      <a class={`btn ${d === fecha ? 'btn-primario' : 'btn-fantasma'}`} href={`/registrar?fecha=${d}`}>
+        {formatFecha(d)}
+      </a>
+    ))}
+  </nav>
+  {cerrado ? (
+    <section class="card" aria-label="Día cerrado">
+      <p><span class="badge badge-suave">día cerrado</span></p>
+      <p class="muted">Este día ya tiene arqueo y no acepta movimientos.</p>
+    </section>
+  ) : (
+    <FormMovimiento fecha={fecha} error={error} />
+  )}
+  {cerrado && error !== '' && <p class="destructivo" role="alert">{error}</p>}
+  <TablaMovimientos movimientos={lista} bloqueado={cerrado} />
 </Base>

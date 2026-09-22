@@ -1,0 +1,62 @@
+---
+import { formatPEN } from '../lib/format';
+
+interface Movimiento {
+  id: number;
+  tipo: string;
+  medio: string;
+  categoria: string;
+  concepto: string;
+  monto: number;
+}
+
+interface Props {
+  movimientos: Movimiento[];
+  bloqueado?: boolean;
+}
+
+const { movimientos, bloqueado = false } = Astro.props;
+---
+<section class="card" aria-label="Movimientos del día">
+  <h2>Movimientos del día</h2>
+  {movimientos.length === 0 ? (
+    <p class="muted">Sin movimientos este día.</p>
+  ) : (
+    <table>
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th>Tipo</th>
+          <th>Medio</th>
+          <th>Categoría</th>
+          <th class="num">Monto</th>
+          {!bloqueado && (
+            <th><span class="muted">Acción</span></th>
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        {movimientos.map((m) => (
+          <tr>
+            <td>{m.concepto}</td>
+            <td>{m.tipo === 'ingreso' ? '+ ingreso' : '− gasto'}</td>
+            <td><span class="badge badge-suave">{m.medio}</span></td>
+            <td><span class="badge badge-suave">{m.categoria}</span></td>
+            <td class="num">{formatPEN(m.monto)}</td>
+            {!bloqueado && (
+              <td>
+                <form method="post" onsubmit="return confirm('¿Borrar este movimiento?')">
+                  <input type="hidden" name="action" value="eliminar" />
+                  <input type="hidden" name="id" value={m.id} />
+                  <button type="submit" class="destructivo btn-texto">
+                    Borrar
+                  </button>
+                </form>
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+</section>
