@@ -336,6 +336,19 @@ th.num {
   font-variant-numeric: tabular-nums;
 }
 
+/* Firmas de rendición: discretas en pantalla, visibles en impreso */
+.firmas {
+  display: flex;
+  gap: var(--spacing-48);
+}
+
+.firmas p {
+  flex: 1;
+  border-top: 1px solid var(--color-ink);
+  padding-top: var(--spacing-8);
+  color: var(--color-mid-gray);
+}
+
 @media print {
   .nav,
   .no-print {

@@ -48,11 +48,18 @@ const tablero = calcularTablero(
       <p class="stat-label">Total final — jue {formatFecha('2026-09-24')}</p>
       <p class="stat-valor">{formatPEN(tablero.totalFinal)}</p>
     </section>
+    <section class="card firmas" aria-label="Firmas de rendición">
+      <p><span class="stat-label">Recibido por</span><br />___</p>
+      <p><span class="stat-label">Entregado por</span><br />___</p>
+    </section>
   </div>
   <TablaMovimientos movimientos={movs} bloqueado />
   <p class="no-print">
-    <button type="button" class="btn btn-primario" onclick="window.print()">Imprimir / guardar PDF</button>{' '}
+    <button type="button" class="btn btn-primario" id="btn-print">Imprimir / guardar PDF</button>{' '}
     <a class="btn btn-fantasma" href="/api/export.csv">Descargar CSV</a>
   </p>
-  <p class="muted">El CSV estará disponible en la fase 7.</p>
 </Base>
+
+<script>
+  document.getElementById('btn-print')?.addEventListener('click', () => window.print());
+</script>
