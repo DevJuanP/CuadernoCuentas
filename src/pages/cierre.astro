@@ -1,10 +1,78 @@
 ---
 import Base from '../layouts/Base.astro';
+import FormCierre from '../components/FormCierre.astro';
+import { DIAS, type DiaOperativo } from '../lib/const';
+import { formatFecha } from '../lib/format';
+import { validarCierre } from '../lib/cierre';
+import { calcularTablero } from '../lib/calculos';
+import { getUltimoSaldo } from '../db/saldos';
+import { getTodosMovimientos } from '../db/movimientos';
+import { getTodosCierres, saveCierre } from '../db/cierres';
+
+function diaActivo(param: string | null): DiaOperativo {
+  return (DIAS as readonly string[]).includes(param ?? '') ? (param as DiaOperativo) : DIAS[0];
+}
+
+let fecha = diaActivo(Astro.url.searchParams.get('fecha'));
+let error = '';
+
+const saldo = await getUltimoSaldo();
+const movs = await getTodosMovimientos();
+const cierres = await getTodosCierres();
+const porFecha = new Map(cierres.map((c) => [c.fecha, c]));
+
+function calculadoDe(f: DiaOperativo) {
+  const tablero = calcularTablero(
+    saldo ? { efectivo: saldo.efectivoTotal, cuenta: saldo.cuenta } : null,
+    movs.map((m) => ({ fecha: m.fecha, tipo: m.tipo, medio: m.medio, monto: m.monto })),
+    cierres.map((c) => ({ fecha: c.fecha, efectivoContado: c.efectivoContado, cuentaContado: c.cuentaContado })),
+  );
+  return tablero.dias.find((d) => d.fecha === f)!.calculado;
+}
+
+let previo: { efectivoContado: number; cuentaContado: number; observaciones: string | null } | null =
+  porFecha.get(fecha) ?? null;
+
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  const f = diaActivo(fd.get('fecha')?.toString() ?? null);
+  fecha = f;
+  previo = porFecha.get(f) ?? null;
+  const calc = calculadoDe(f);
+  const valido = validarCierre(fd, { efectivo: calc.efectivo, cuenta: calc.cuenta });
+
+  if (!valido) {
+    error = 'Revisa los datos: contados entre 0 y 1 000 000, y observación obligatoria si hay diferencia.';
+    previo = {
+      efectivoContado: Number(fd.get('efectivo_contado')) || 0,
+      cuentaContado: Number(fd.get('cuenta_contado')) || 0,
+      observaciones: fd.get('observaciones')?.toString() ?? '',
+    };
+  } else {
+    await saveCierre(valido);
+    return Astro.redirect(`/cierre?fecha=${valido.fecha}`, 303);
+  }
+}
+
+const calc = calculadoDe(fecha);
 ---
 <Base titulo="Cierre diario" ruta="/cierre">
   <h1>Cierre / arqueo diario</h1>
-  <p class="muted">F1 placeholder — arqueo real en F6 (contado vs calculado, diferencia, observación).</p>
-  <section class="card">
-    <p>Selector fecha + contado + diferencia.</p>
-  </section>
+  <nav class="no-print" aria-label="Día operativo">
+    {DIAS.map((d) => (
+      <a class={`btn ${d === fecha ? 'btn-primario' : 'btn-fantasma'}`} href={`/cierre?fecha=${d}`}>
+        {formatFecha(d)}
+      </a>
+    ))}
+  </nav>
+  {previo && (
+    <p><span class="badge badge-suave">día cerrado</span></p>
+  )}
+  <FormCierre
+    fecha={fecha}
+    calculadoEf={calc.efectivo}
+    calculadoCta={calc.cuenta}
+    previo={previo ? { efectivoContado: previo.efectivoContado, cuentaContado: previo.cuentaContado, observaciones: previo.observaciones } : null}
+    error={error}
+  />
 </Base>

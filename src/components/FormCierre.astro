@@ -1,0 +1,83 @@
+---
+import type { DiaOperativo } from '../lib/const';
+import { formatFecha, formatPEN } from '../lib/format';
+
+interface Previo {
+  efectivoContado: number;
+  cuentaContado: number;
+  observaciones: string | null;
+}
+
+interface Props {
+  fecha: DiaOperativo;
+  calculadoEf: number;
+  calculadoCta: number;
+  previo?: Previo | null;
+  error?: string;
+}
+
+const { fecha, calculadoEf, calculadoCta, previo = null, error = '' } = Astro.props;
+const efInit = previo?.efectivoContado ?? '';
+const ctaInit = previo?.cuentaContado ?? '';
+const obsInit = previo?.observaciones ?? '';
+---
+<form method="post" class="card no-print" id="form-cierre">
+  <h2>Arqueo del día</h2>
+  {error !== '' && <p class="destructivo" role="alert">{error}</p>}
+  <input type="hidden" name="fecha" value={fecha} />
+  <div class="field">
+    <span>Fecha</span>
+    <input type="text" value={formatFecha(fecha)} disabled aria-label="Fecha del arqueo" />
+  </div>
+  <div class="field">
+    <span>Calculado efectivo (lectura)</span>
+    <p class="stat-valor" id="calc-ef" data-valor={calculadoEf}>{formatPEN(calculadoEf)}</p>
+  </div>
+  <div class="field">
+    <span>Calculado cuenta (lectura)</span>
+    <p class="stat-valor" id="calc-cta" data-valor={calculadoCta}>{formatPEN(calculadoCta)}</p>
+  </div>
+  <div class="field">
+    <span>Efectivo contado (S/)</span>
+    <input type="number" name="efectivo_contado" id="in-ef" min="0" step="0.01" required value={efInit} placeholder="0.00" />
+  </div>
+  <div class="field">
+    <span>Cuenta contada (S/)</span>
+    <input type="number" name="cuenta_contado" id="in-cta" min="0" step="0.01" required value={ctaInit} placeholder="0.00" />
+  </div>
+  <div class="field">
+    <span>Diferencia viva (contado − calculado)</span>
+    <p id="dif-viva">Ef — · Cta —</p>
+  </div>
+  <div class="field">
+    <span>Observaciones (obligatoria si hay diferencia)</span>
+    <textarea name="observaciones" rows="2" maxlength="500" placeholder="Ej. faltan 10 en efectivo">{obsInit}</textarea>
+  </div>
+  <button type="submit" class="btn btn-primario">Guardar cierre</button>
+</form>
+
+<script>
+  const inEf = document.getElementById('in-ef') as HTMLInputElement | null;
+  const inCta = document.getElementById('in-cta') as HTMLInputElement | null;
+  const calcEf = Number((document.getElementById('calc-ef') as HTMLElement | null)?.dataset.valor ?? 0);
+  const calcCta = Number((document.getElementById('calc-cta') as HTMLElement | null)?.dataset.valor ?? 0);
+  const dif = document.getElementById('dif-viva');
+  const fmt = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function actualiza() {
+    const ef = Number(inEf?.value ?? '');
+    const cta = Number(inCta?.value ?? '');
+    if (!Number.isFinite(ef) || !Number.isFinite(cta) || (inEf?.value ?? '') === '' || (inCta?.value ?? '') === '') {
+      if (dif) dif.textContent = 'Ef — · Cta —';
+      return;
+    }
+    const dEf = ef - calcEf;
+    const dCta = cta - calcCta;
+    if (dif) {
+      dif.textContent = `Ef ${fmt.format(dEf)} · Cta ${fmt.format(dCta)}` + (dEf === 0 && dCta === 0 ? ' — cuadrado' : '');
+      dif.className = dEf === 0 && dCta === 0 ? '' : 'destructivo';
+    }
+  }
+  inEf?.addEventListener('input', actualiza);
+  inCta?.addEventListener('input', actualiza);
+  actualiza();
+</script>
